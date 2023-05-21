@@ -1,11 +1,11 @@
-name: "tiny_imagenet"
-ref: "Maysee/tiny-imagenet"
+name: "cifar10"
+ref: "cifar10"
 train_split: train
-test_split: valid
+test_split: test
 label_key: label
-image_key: image
-num_classes: 200
-input_size: 64
+image_key: img
+num_classes: 10
+input_size: 32
 in_channels: 3
 transforms: ${..transforms}
 standard_x_key: ${x_key}

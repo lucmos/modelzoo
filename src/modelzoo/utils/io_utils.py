@@ -25,6 +25,10 @@ def preprocess_dataset(
     dataset = dataset.rename_column(cfg.label_key, cfg.standard_y_key)
     dataset = dataset.rename_column(cfg.image_key, cfg.standard_x_key)
 
+    dataset = dataset.map(
+        lambda x: {cfg.standard_x_key: convert_to_rgb(x[cfg.standard_x_key])}, desc="Converting to RGB"
+    )
+
     return dataset
 
 

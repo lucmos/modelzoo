@@ -43,7 +43,7 @@ class ChannelOrder(torch.nn.Module):
         Returns:
             Tensor: Normalized Tensor image.
         """
-        if tensor.shape[-1] != 1 or tensor.shape[-1] != 3:
+        if tensor.shape[-1] != 1 and tensor.shape[-1] != 3:
             tensor = tensor.unsqueeze(-1)
 
         if tensor.ndim == 3:

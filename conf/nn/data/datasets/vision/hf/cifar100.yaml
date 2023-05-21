@@ -5,8 +5,6 @@ test_split: test
 label_key: fine_label
 image_key: img
 num_classes: 100
-num_train_samples_per_class: 500
-num_test_samples_per_class: 100
 input_size: 32
 in_channels: 3
 transforms: ${..transforms}

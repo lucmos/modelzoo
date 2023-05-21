@@ -1,5 +1,5 @@
 import math
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import hydra.utils
 import torch
@@ -18,7 +18,7 @@ class VanillaAE(nn.Module):
         latent_dim: int,
         decoder_in_normalization: nn.Module,
         hidden_dims: List = None,
-        latent_activation: str = "torch.nn.GELU",
+        latent_activation: Optional[str] = None,
         **kwargs,
     ) -> None:
         """https://github.com/AntixK/PyTorch-VAE/blob/master/models/vanilla_vae.py

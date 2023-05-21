@@ -22,8 +22,10 @@ def infer_dimension(width: int, height: int, n_channels: int, model: nn.Module, 
         the fake output
     """
     with torch.no_grad():
+        model.eval()
         fake_batch = torch.zeros([batch_size, n_channels, width, height])
         fake_out = model(fake_batch)
+        model.train()
         return fake_out
 
 
@@ -169,7 +171,6 @@ def build_dynamic_encoder_decoder(
     hidden_dims: Optional[Sequence[int]],
     activation: str = "torch.nn.GELU",
     remove_encoder_last_activation: bool = False,
-    use_batch_norm: bool = True,
 ) -> Tuple[nn.Module, Sequence[int], nn.Module]:
     """Builds a dynamic convolutional encoder-decoder pair with parametrized hidden dimensions number and size.
 

@@ -1,6 +1,8 @@
 transforms:
   _target_: torchvision.transforms.Compose
   transforms:
+    - _target_: modelzoo.data.vision.data_transforms.ChannelOrder
+
     - _target_: modelzoo.data.vision.data_transforms.ChannelAdapt
       in_channels: ${nn.data.datasets.hf.in_channels}
       out_channels: ${nn.module.model.in_channels}
@@ -10,7 +12,6 @@ transforms:
 
     - _target_: modelzoo.data.vision.data_transforms.Normalize01
 
-    - _target_: modelzoo.data.vision.data_transforms.ChannelOrder
 
 anchors:
   in_channels: ???
