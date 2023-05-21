@@ -90,24 +90,12 @@ class VanillaAE(nn.Module):
         }
 
     def loss_function(self, model_out, batch, *args, **kwargs) -> dict:
-        """https://stackoverflow.com/questions/64909658/what-could-cause-a-vaevariational-autoencoder-to-output-random-noise-even-afte
-
-        Computes the VAE loss function.
-        KL(N(mu, sigma), N(0, 1)) = log frac{1}{sigma} + frac{sigma^2 + mu^2}{2} - frac{1}{2}
-        :param args:
-        :param kwargs:
-        :return:
-        """
         predictions = model_out[Output.RECONSTRUCTION]
         targets = batch["x"]
-        mse = F.mse_loss(predictions, targets, reduction="mean")
-        log_sigma_opt = 0.5 * mse.log()
-        r_loss = 0.5 * torch.pow((targets - predictions) / log_sigma_opt.exp(), 2) + log_sigma_opt
-        r_loss = r_loss.sum()
-        loss = r_loss
+        loss = F.mse_loss(predictions, targets, reduction="mean")
         return {
             "loss": loss,
-            "reconstruction": r_loss.detach() / targets.shape[0],
+            "reconstruction": F.mse_loss(predictions, targets, reduction="mean"),
         }
 
     def sample(self, num_samples: int, current_device: int, **kwargs) -> Tensor:

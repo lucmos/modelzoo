@@ -201,7 +201,7 @@ def build_dynamic_encoder_decoder(
             nn.Sequential(
                 (
                     conv2d := nn.Conv2d(
-                        running_channels, out_channels=h_dim, kernel_size=3, stride=STRIDE, padding=PADDING
+                        running_channels, out_channels=h_dim, kernel_size=4, stride=STRIDE, padding=PADDING
                     )
                 ),
                 nn.BatchNorm2d(h_dim),
@@ -222,6 +222,8 @@ def build_dynamic_encoder_decoder(
     encoder = nn.Sequential(*modules)
 
     encoder_out_shape = infer_dimension(width, height, n_channels=n_channels, model=encoder, batch_size=1).shape
+
+    pylogger.info(f"Encoder output shape: {encoder_out_shape}")
 
     # Build Decoder
     hidden_dims = list(reversed(hidden_dims))
