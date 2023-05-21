@@ -1,8 +1,7 @@
 _target_: modelzoo.modules.aes.vae.VanillaVAE
 latent_dim: 768
 hidden_dims: [12, 24, 48]
-calibrated_loss: False
-kld_weight: 0.025
+kld_weight: 0.00025
 decoder_in_normalization: ???
 
 defaults:
