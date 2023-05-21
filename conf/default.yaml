@@ -1,9 +1,14 @@
+x_key: 'x'
+y_key: 'y'
+
 # metadata specialised for each experiment
 core:
   project_name: modelzoo
   storage_dir: ${oc.env:PROJECT_ROOT}/storage
   version: 0.0.1
-  tags: null
+  name: null
+  tags:
+  - develop
 
 defaults:
   - hydra: default

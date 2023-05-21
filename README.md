@@ -50,3 +50,11 @@ Re-install the project in edit mode:
 ```bash
 pip install -e .[dev]
 ```
+
+
+### Acknowledgements
+
+Codebase inspired from the code of:
+
+- Valentino Maiorca
+- Donato Crisostomi

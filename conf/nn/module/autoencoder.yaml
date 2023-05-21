@@ -1,0 +1,5 @@
+_target_: modelzoo.pl_modules.aes.pl_autoencoder.LightningAutoencoder
+
+defaults:
+  - _self_
+  - model: ae

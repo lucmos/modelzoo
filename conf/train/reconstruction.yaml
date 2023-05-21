@@ -5,27 +5,29 @@ deterministic: False
 # PyTorch Lightning Trainer https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html
 trainer:
   fast_dev_run: False # Enable this for debug purposes
-  gpus: 1
+  accelerator: "auto"
+  devices: 1
   precision: 32
-  max_epochs: 3
-  max_steps: 10000
+  max_epochs: 100
+  max_steps: 1000000
   accumulate_grad_batches: 1
   num_sanity_val_steps: 2
   gradient_clip_val: 10.0
-  val_check_interval: 1.0
+  check_val_every_n_epoch: 10
+  reload_dataloaders_every_n_epochs: ${ifthenelse:1, ${oc.select:nn.data.datasets.tasks_progression, False}, 0}
   deterministic: ${train.deterministic}
 
 restore:
   ckpt_or_run_path: null
-  mode: continue # null, finetune, hotstart, continue
+  mode: null # null, finetune, hotstart, continue
 
 monitor:
-  metric: 'loss/val'
+  metric: 'val_stage/mse'
   mode: 'min'
 
 callbacks:
   - _target_: pytorch_lightning.callbacks.EarlyStopping
-    patience: 42
+    patience: 200
     verbose: False
     monitor: ${train.monitor.metric}
     mode: ${train.monitor.mode}
@@ -51,8 +53,9 @@ logging:
   logger:
     _target_: pytorch_lightning.loggers.WandbLogger
 
+    name: ${core.name}
     project: ${core.project_name}
-    entity: null
+    entity: gladia
     log_model: ${..upload.run_files}
     mode: 'online'
     tags: ${core.tags}

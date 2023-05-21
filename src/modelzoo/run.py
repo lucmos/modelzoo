@@ -15,7 +15,7 @@ from nn_core.serialization import NNCheckpointIO
 
 # Force the execution of __init__.py if this file is executed directly.
 import modelzoo  # noqa
-from modelzoo.data.datamodule import MetaData
+from modelzoo.data.vision.datamodule import MetaData
 
 pylogger = logging.getLogger(__name__)
 
@@ -54,7 +54,7 @@ def run(cfg: DictConfig) -> str:
     if fast_dev_run:
         pylogger.info(f"Debug mode <{cfg.train.trainer.fast_dev_run=}>. Forcing debugger friendly configuration!")
         # Debuggers don't like GPUs nor multiprocessing
-        cfg.train.trainer.gpus = 0
+        cfg.train.trainer.accelerator = "cpu"
         cfg.nn.data.num_workers.train = 0
         cfg.nn.data.num_workers.val = 0
         cfg.nn.data.num_workers.test = 0
@@ -93,7 +93,11 @@ def run(cfg: DictConfig) -> str:
     )
 
     pylogger.info("Starting training!")
-    trainer.fit(model=model, datamodule=datamodule, ckpt_path=template_core.trainer_ckpt_path)
+    trainer.fit(
+        model=model,
+        datamodule=datamodule,
+        ckpt_path=template_core.trainer_ckpt_path,
+    )
 
     if fast_dev_run:
         pylogger.info("Skipping testing in 'fast_dev_run' mode!")

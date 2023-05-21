@@ -1,0 +1,33 @@
+transforms:
+  _target_: torchvision.transforms.Compose
+  transforms:
+    - _target_: modelzoo.data.vision.data_transforms.ChannelAdapt
+      in_channels: ${nn.data.datasets.hf.in_channels}
+      out_channels: ${nn.module.model.in_channels}
+
+    - _target_: torchvision.transforms.Resize
+      size: ${nn.module.model.input_size}
+
+    - _target_: modelzoo.data.vision.data_transforms.Normalize01
+
+    - _target_: modelzoo.data.vision.data_transforms.ChannelOrder
+
+anchors:
+  in_channels: ???
+  input_size: ???
+  transforms: ???
+
+train:
+  in_channels: ???
+  input_size: ???
+  transforms: ???
+
+val:
+  in_channels: ???
+  input_size: ???
+  transforms: ???
+
+defaults:
+  - _self_
+  - vision/hf@anchors: mnist # pick one of the yamls in nn/data/
+  - vision/hf@hf: mnist # pick one of the yamls in nn/data/

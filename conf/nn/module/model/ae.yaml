@@ -1,0 +1,7 @@
+_target_: modelzoo.modules.aes.ae.VanillaAE
+latent_dim: 500
+hidden_dims: null
+decoder_in_normalization: ???
+
+defaults:
+  - decoder_in_normalization: none

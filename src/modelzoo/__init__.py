@@ -1,6 +1,14 @@
 import logging
+from pathlib import Path
+
+from omegaconf import OmegaConf
 
 from nn_core.console_logging import NNRichHandler
+
+OmegaConf.register_new_resolver("ifthenelse", lambda positive, condition, negative: positive if condition else negative)
+
+
+PACKAGE_ROOT = Path(__file__).resolve().parent.parent.parent
 
 # Required workaround because PyTorch Lightning configures the logging on import,
 # thus the logging configuration defined in the __init__.py must be called before
