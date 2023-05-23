@@ -25,14 +25,14 @@ def preprocess_dataset(
     dataset = dataset.rename_column(cfg.label_key, cfg.standard_y_key)
     dataset = dataset.rename_column(cfg.image_key, cfg.standard_x_key)
 
-    dataset = dataset.map(
-        lambda x: {cfg.standard_x_key: convert_to_rgb(x[cfg.standard_x_key])},
-        desc="Converting to RGB",
-        num_proc=1,
-        writer_batch_size=1_000,
-        keep_in_memory=True,
-        load_from_cache_file=False,
-    )
+    # dataset = dataset.map(
+    #     lambda x: {cfg.standard_x_key: convert_to_rgb(x[cfg.standard_x_key])},
+    #     desc="Converting to RGB",
+    #     num_proc=1,
+    #     writer_batch_size=1_000,
+    #     keep_in_memory=True,
+    #     load_from_cache_file=False,
+    # )
 
     return dataset
 
