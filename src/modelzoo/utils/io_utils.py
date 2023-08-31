@@ -3,10 +3,10 @@ from pathlib import Path
 from typing import Callable, Dict
 
 import numpy as np
+from anypy.data.metadata_dataset_dict import MetadataDatasetDict
 from datasets import Dataset, DatasetDict, load_dataset, load_from_disk
 
 from modelzoo import PACKAGE_ROOT
-from modelzoo.data.datasetdict import MyDatasetDict
 from modelzoo.utils.utils import compute_cfg_hash
 
 DatasetParams = namedtuple("DatasetParams", ["name", "fine_grained", "train_split", "test_split", "hf_key"])
@@ -110,7 +110,7 @@ def load_data(cfg):
             use_auth_token=True,
         )
         test_dataset = load_dataset(dataset_params.name, split=dataset_params.test_split)
-        dataset: DatasetDict = MyDatasetDict(train=train_dataset, test=test_dataset)
+        dataset: DatasetDict = MetadataDatasetDict(train=train_dataset, test=test_dataset)
 
         dataset = preprocess_dataset(dataset, cfg)
         dataset = add_ids_to_dataset(dataset)
@@ -122,7 +122,7 @@ def load_data(cfg):
     return dataset
 
 
-def save_dataset_to_disk(dataset: MyDatasetDict, output_path: Path):
+def save_dataset_to_disk(dataset: MetadataDatasetDict, output_path: Path):
     if not isinstance(output_path, Path):
         output_path = Path(output_path)
 
