@@ -14,8 +14,8 @@
             "args": [
                 "nn=aes",
                 "train=reconstruction",
-                "nn/data/datasets/vision/hf@nn.data.datasets.anchors=tiny_imagenet",
-                "nn/data/datasets/vision/hf@nn.data.datasets.hf=tiny_imagenet"
+                "nn/data/datasets/vision/hf@nn.data.datasets.anchors=fmnist",
+                "nn/data/datasets/vision/hf@nn.data.datasets.hf=fmnist"
             ]
         }
     ]

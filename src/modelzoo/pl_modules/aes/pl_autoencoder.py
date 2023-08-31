@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, List, Mapping, Optional, Set
+from typing import Any, Mapping, Optional, Set
 
 import hydra
 import omegaconf
@@ -49,6 +49,8 @@ class LightningAutoencoder(AbstractLightningModule):
 
         self.supported_viz = self.supported_viz()
         pylogger.info(f"Enabled visualizations: {str(sorted(x.value for x in self.supported_viz))}")
+
+        self.validation_step_outputs = []
 
     def supported_viz(self) -> Set[SupportedViz]:
         supported_viz = set()
@@ -136,9 +138,12 @@ class LightningAutoencoder(AbstractLightningModule):
         return self.step(batch, batch_idx, stage=Stage.TRAIN_STAGE)
 
     def validation_step(self, batch: Any, batch_idx: int) -> Mapping[str, Any]:
-        return self.step(batch, batch_idx, stage=Stage.VAL_STAGE)
+        out = self.step(batch, batch_idx, stage=Stage.VAL_STAGE)
+        self.validation_step_outputs.append(out)
+        return out
 
-    def validation_epoch_end(self, outputs: List[Dict[str, Any]]) -> None:
+    def on_validation_epoch_end(self) -> None:
+        outputs = self.validation_step_outputs
         if self.trainer.sanity_checking:
             return
 
@@ -207,6 +212,7 @@ class LightningAutoencoder(AbstractLightningModule):
             anchors_latents=anchors_latents,
             fixed_images_out=self(self.fixed_images),
         )
+        self.validation_step_outputs.clear()  # free memory
 
 
 @hydra.main(config_path=str(PROJECT_ROOT / "conf"), config_name="default", version_base="1.1")
