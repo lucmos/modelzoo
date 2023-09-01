@@ -4,6 +4,7 @@ from typing import List, Optional
 import hydra
 import omegaconf
 import pytorch_lightning as pl
+import torch
 from omegaconf import DictConfig, ListConfig
 from pytorch_lightning import Callback
 
@@ -16,6 +17,8 @@ from nn_core.serialization import NNCheckpointIO
 # Force the execution of __init__.py if this file is executed directly.
 import modelzoo  # noqa
 from modelzoo.data.vision.datamodule import MetaData
+
+torch.set_float32_matmul_precision("high")
 
 pylogger = logging.getLogger(__name__)
 
