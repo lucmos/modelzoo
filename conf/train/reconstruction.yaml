@@ -12,7 +12,7 @@ trainer:
   max_steps: 10000000
   accumulate_grad_batches: 1
   num_sanity_val_steps: 2
-  gradient_clip_val: 5.0
+  gradient_clip_val: .5
   check_val_every_n_epoch: 50
   reload_dataloaders_every_n_epochs: ${ifthenelse:1, ${oc.select:nn.data.datasets.tasks_progression, False}, 0}
   deterministic: ${train.deterministic}
