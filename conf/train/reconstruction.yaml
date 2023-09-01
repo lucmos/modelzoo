@@ -13,7 +13,7 @@ trainer:
   accumulate_grad_batches: 1
   num_sanity_val_steps: 2
   gradient_clip_val: 5.0
-  check_val_every_n_epoch: 100
+  check_val_every_n_epoch: 50
   reload_dataloaders_every_n_epochs: ${ifthenelse:1, ${oc.select:nn.data.datasets.tasks_progression, False}, 0}
   deterministic: ${train.deterministic}
 
@@ -27,7 +27,7 @@ monitor:
 
 callbacks:
   - _target_: pytorch_lightning.callbacks.EarlyStopping
-    patience: 200
+    patience: 3
     verbose: False
     monitor: ${train.monitor.metric}
     mode: ${train.monitor.mode}
@@ -43,7 +43,7 @@ callbacks:
     log_momentum: False
 
   - _target_: pytorch_lightning.callbacks.progress.tqdm_progress.TQDMProgressBar
-    refresh_rate: 20
+    refresh_rate: 250
 
 logging:
   upload:
