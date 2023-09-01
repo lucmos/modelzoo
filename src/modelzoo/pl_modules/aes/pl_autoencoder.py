@@ -71,9 +71,9 @@ class LightningAutoencoder(AbstractLightningModule):
         # supported_viz.add(SupportedViz.ANCHORS_VALIDATION_IMAGES_INNER_PRODUCT)
         # supported_viz.add(SupportedViz.ANCHORS_SELF_INNER_PRODUCT_NORMALIZED)
         # supported_viz.add(SupportedViz.ANCHORS_VALIDATION_IMAGES_INNER_PRODUCT_NORMALIZED)
-        supported_viz.add(SupportedViz.LATENT_SPACE)
-        supported_viz.add(SupportedViz.LATENT_SPACE_NORMALIZED)
-        supported_viz.add(SupportedViz.LATENT_SPACE_PCA)
+        # supported_viz.add(SupportedViz.LATENT_SPACE)
+        # supported_viz.add(SupportedViz.LATENT_SPACE_NORMALIZED)
+        # supported_viz.add(SupportedViz.LATENT_SPACE_PCA)
         return supported_viz
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
