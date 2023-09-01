@@ -102,7 +102,7 @@ class LightningAutoencoder(AbstractLightningModule):
     def decode(self, *args, **kwargs):
         return self.autoencoder.decode(*args, **kwargs)
 
-    def step(self, batch, batch_index: int, stage: Stage) -> Mapping[str, Any]:
+    def step(self, batch, batch_index: int, stage: Stage, return_all: bool = False) -> Mapping[str, Any]:
         image_batch = batch["x"]
         out = self(image_batch)
 
@@ -122,11 +122,16 @@ class LightningAutoencoder(AbstractLightningModule):
             batch_size=batch["x"].shape[0],
         )
 
-        return {
-            Output.LOSS: loss_out["loss"],
-            Output.BATCH: batch,
-            **{key: detach_tensors(value) for key, value in out.items()},
-        }
+        if return_all:
+            return {
+                Output.LOSS: loss_out["loss"],
+                Output.BATCH: {key: detach_tensors(value) for key, value in batch.items()},
+                **{key: detach_tensors(value) for key, value in out.items()},
+            }
+        else:
+            return {
+                Output.LOSS: loss_out["loss"],
+            }
 
     def on_fit_start(self) -> None:
         on_fit_start_viz(lightning_module=self, fixed_images=self.fixed_images, anchors_images=self.anchors_images)
@@ -135,10 +140,10 @@ class LightningAutoencoder(AbstractLightningModule):
         on_fit_end_viz(lightning_module=self, validation_stats_df=None)
 
     def training_step(self, batch: Any, batch_idx: int) -> Mapping[str, Any]:
-        return self.step(batch, batch_idx, stage=Stage.TRAIN_STAGE)
+        return self.step(batch, batch_idx, stage=Stage.TRAIN_STAGE, return_all=False)
 
     def validation_step(self, batch: Any, batch_idx: int) -> Mapping[str, Any]:
-        out = self.step(batch, batch_idx, stage=Stage.VAL_STAGE)
+        out = self.step(batch, batch_idx, stage=Stage.VAL_STAGE, return_all=True)
         self.validation_step_outputs.append(out)
         return out
 
@@ -151,10 +156,10 @@ class LightningAutoencoder(AbstractLightningModule):
         for output in outputs:
             aggregate(
                 validation_aggregation,
-                image_index=output["batch"]["id"].cpu().tolist(),
+                image_index=output["batch"]["id"].tolist(),
                 class_name=[self.metadata.idx_to_class[x] for x in output["batch"]["y"]],
-                target=output["batch"]["y"].cpu(),
-                latents=output[Output.DEFAULT_LATENT].cpu(),
+                target=output["batch"]["y"],
+                latents=output[Output.DEFAULT_LATENT],
                 epoch=[self.current_epoch] * len(output["batch"]["id"]),
                 is_anchor=[False] * len(output["batch"]["id"]),
                 anchor_index=[None] * len(output["batch"]["id"]),
@@ -199,9 +204,14 @@ class LightningAutoencoder(AbstractLightningModule):
             anchor_index=list(range(anchors_num)),
         )
 
-        latents = validation_aggregation["latents"]
-        self.fit_pca(latents)
-        add_2D_latents(validation_aggregation, latents=latents, pca=self.validation_pca)
+        if (
+            SupportedViz.LATENT_SPACE in self.supported_viz
+            or SupportedViz.LATENT_SPACE_NORMALIZED in self.supported_viz
+            or SupportedViz.LATENT_SPACE_PCA in self.supported_viz
+        ):
+            latents = validation_aggregation["latents"]
+            self.fit_pca(latents)
+            add_2D_latents(validation_aggregation, latents=latents, pca=self.validation_pca)
         del validation_aggregation["latents"]
 
         validation_epoch_end_viz(
