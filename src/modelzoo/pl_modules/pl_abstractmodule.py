@@ -48,13 +48,15 @@ class AbstractLightningModule(pl.LightningModule):
         raise NotImplementedError
 
     def on_save_checkpoint(self, checkpoint: Dict[str, Any]) -> None:
-        checkpoint["validation_pca"] = self.validation_pca
+        if SupportedViz.LATENT_SPACE_PCA in self.supported_viz:
+            checkpoint["validation_pca"] = self.validation_pca
 
     def on_load_checkpoint(self, checkpoint: Dict[str, Any]) -> None:
-        if "validation_pca" in checkpoint:
-            self.validation_pca = checkpoint["validation_pca"]
-        else:
-            self.validation_pca = PCA(n_components=2)
+        if SupportedViz.LATENT_SPACE_PCA in self.supported_viz:
+            if "validation_pca" in checkpoint:
+                self.validation_pca = checkpoint["validation_pca"]
+            else:
+                self.validation_pca = PCA(n_components=2)
 
     def fit_pca(self, latents: torch.Tensor) -> None:
         if self.validation_pca is None or self.hparams.fit_pca_each_epoch:
