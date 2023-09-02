@@ -1,12 +1,10 @@
-import math
-from typing import Dict, List, Optional
+from typing import Any, Dict, List
 
-import hydra.utils
 import torch
+from anypy.nn.blocks import build_dynamic_encoder_decoder
 from torch import Tensor, nn
 from torch.nn import functional as F
 
-from modelzoo.modules.aes.blocks import build_dynamic_encoder_decoder
 from modelzoo.modules.aes.enumerations import Output
 
 
@@ -15,10 +13,8 @@ class VanillaAE(nn.Module):
         self,
         metadata,
         input_size,
-        latent_dim: int,
-        decoder_in_normalization: nn.Module,
-        hidden_dims: List = None,
-        latent_activation: Optional[str] = None,
+        encoder_layers_config: List[Dict[str, Any]],
+        decoder_layers_config: List[Dict[str, Any]],
         **kwargs,
     ) -> None:
         """https://github.com/AntixK/PyTorch-VAE/blob/master/models/vanilla_vae.py
@@ -33,30 +29,12 @@ class VanillaAE(nn.Module):
 
         self.metadata = metadata
         self.input_size = input_size
-        self.latent_dim = latent_dim
 
         self.encoder, self.encoder_out_shape, self.decoder = build_dynamic_encoder_decoder(
-            width=metadata.width, height=metadata.height, n_channels=metadata.n_channels, hidden_dims=hidden_dims
+            encoder_layers_config=encoder_layers_config,
+            decoder_layers_config=decoder_layers_config,
+            input_shape=[-1, metadata.n_channels, metadata.height, metadata.width],
         )
-        encoder_out_numel = math.prod(self.encoder_out_shape[1:])
-
-        self.encoder_out = nn.Sequential(
-            nn.Linear(encoder_out_numel, latent_dim),
-            hydra.utils.instantiate({"_target_": latent_activation})
-            if latent_activation is not None
-            else nn.Identity(),
-        )
-
-        self.decoder_in = nn.Sequential(
-            nn.Linear(
-                self.latent_dim,
-                encoder_out_numel,
-            ),
-            hydra.utils.instantiate({"_target_": latent_activation})
-            if latent_activation is not None
-            else nn.Identity(),
-        )
-        self.decoder_in_normalization = decoder_in_normalization
 
     def encode(self, input: Tensor) -> Dict[str, Tensor]:
         """
@@ -67,7 +45,6 @@ class VanillaAE(nn.Module):
         """
         result = self.encoder(input)
         result = torch.flatten(result, start_dim=1)
-        result = self.encoder_out(result)
         return {
             Output.BATCH_LATENT: result,
         }
@@ -79,9 +56,7 @@ class VanillaAE(nn.Module):
         :param z: (Tensor) [B x D]
         :return: (Tensor) [B x C x H x W]
         """
-        result = self.decoder_in_normalization(batch_latent)
-        result = self.decoder_in(result)
-        result = result.view(-1, *self.encoder_out_shape[1:])
+        result = batch_latent.view(-1, *self.encoder_out_shape[1:])
         result = self.decoder(result)
         return {
             Output.RECONSTRUCTION: result,

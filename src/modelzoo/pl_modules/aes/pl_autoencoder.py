@@ -33,7 +33,7 @@ class LightningAutoencoder(AbstractLightningModule):
         super().__init__(metadata, *args, **kwargs)
 
         self.autoencoder = hydra.utils.instantiate(
-            kwargs["model"] if "model" in kwargs else kwargs["autoencoder"], metadata=metadata, _recursive_=True
+            kwargs["model"] if "model" in kwargs else kwargs["autoencoder"], metadata=metadata, _recursive_=False
         )
 
         self.reconstruction_quality_metrics = {
