@@ -11,7 +11,13 @@
             "program": "${file}",
             "console": "integratedTerminal",
             "justMyCode": false,
-            "args": ["nn=aes"]
+            "args": [
+                "nn=aes",
+                "train=reconstruction",
+                "nn/module/model=ae",
+                "nn/data/datasets/vision/hf@nn.data.datasets.anchors=fmnist",
+                "nn/data/datasets/vision/hf@nn.data.datasets.hf=fmnist"
+            ]
         }
     ]
 }

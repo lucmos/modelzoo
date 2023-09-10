@@ -3,11 +3,9 @@ from pathlib import Path
 from typing import List
 
 import wandb
-from omegaconf import OmegaConf
 from tqdm import tqdm
 
 from nn_core.common import PROJECT_ROOT
-from nn_core.serialization import NNCheckpointIO, load_model
 
 WANDB_DIR: Path = PROJECT_ROOT / "wandb"
 
@@ -50,10 +48,3 @@ def checkpoint_selection(entity: str, project: str, run_id: str):
     rud_dir = get_run_dir(entity=entity, project=project, run_id=run_id)
     ckpt_path = local_checkpoint_selection(rud_dir, 0)
     return ckpt_path
-
-
-def load_model_cfg(module_class, ckpt_path, map_location="cpu"):
-    model = load_model(module_class=module_class, checkpoint_path=ckpt_path, map_location=map_location)
-    cfg = NNCheckpointIO.load(path=ckpt_path, map_location=map_location)["cfg"]
-
-    return model, OmegaConf.create(cfg)

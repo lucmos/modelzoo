@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, List, Mapping, Optional, Set
+from typing import Any, Mapping, Optional, Set
 
 import hydra
 import omegaconf
@@ -33,7 +33,7 @@ class LightningAutoencoder(AbstractLightningModule):
         super().__init__(metadata, *args, **kwargs)
 
         self.autoencoder = hydra.utils.instantiate(
-            kwargs["model"] if "model" in kwargs else kwargs["autoencoder"], metadata=metadata, _recursive_=True
+            kwargs["model"] if "model" in kwargs else kwargs["autoencoder"], metadata=metadata, _recursive_=False
         )
 
         self.reconstruction_quality_metrics = {
@@ -49,6 +49,8 @@ class LightningAutoencoder(AbstractLightningModule):
 
         self.supported_viz = self.supported_viz()
         pylogger.info(f"Enabled visualizations: {str(sorted(x.value for x in self.supported_viz))}")
+
+        self.validation_step_outputs = []
 
     def supported_viz(self) -> Set[SupportedViz]:
         supported_viz = set()
@@ -69,9 +71,9 @@ class LightningAutoencoder(AbstractLightningModule):
         # supported_viz.add(SupportedViz.ANCHORS_VALIDATION_IMAGES_INNER_PRODUCT)
         # supported_viz.add(SupportedViz.ANCHORS_SELF_INNER_PRODUCT_NORMALIZED)
         # supported_viz.add(SupportedViz.ANCHORS_VALIDATION_IMAGES_INNER_PRODUCT_NORMALIZED)
-        supported_viz.add(SupportedViz.LATENT_SPACE)
-        supported_viz.add(SupportedViz.LATENT_SPACE_NORMALIZED)
-        supported_viz.add(SupportedViz.LATENT_SPACE_PCA)
+        # supported_viz.add(SupportedViz.LATENT_SPACE)
+        # supported_viz.add(SupportedViz.LATENT_SPACE_NORMALIZED)
+        # supported_viz.add(SupportedViz.LATENT_SPACE_PCA)
         return supported_viz
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -100,7 +102,7 @@ class LightningAutoencoder(AbstractLightningModule):
     def decode(self, *args, **kwargs):
         return self.autoencoder.decode(*args, **kwargs)
 
-    def step(self, batch, batch_index: int, stage: Stage) -> Mapping[str, Any]:
+    def step(self, batch, batch_index: int, stage: Stage, return_all: bool = False) -> Mapping[str, Any]:
         image_batch = batch["x"]
         out = self(image_batch)
 
@@ -120,11 +122,16 @@ class LightningAutoencoder(AbstractLightningModule):
             batch_size=batch["x"].shape[0],
         )
 
-        return {
-            Output.LOSS: loss_out["loss"],
-            Output.BATCH: batch,
-            **{key: detach_tensors(value) for key, value in out.items()},
-        }
+        if return_all:
+            return {
+                Output.LOSS: loss_out["loss"],
+                Output.BATCH: {key: detach_tensors(value) for key, value in batch.items()},
+                **{key: detach_tensors(value) for key, value in out.items()},
+            }
+        else:
+            return {
+                Output.LOSS: loss_out["loss"],
+            }
 
     def on_fit_start(self) -> None:
         on_fit_start_viz(lightning_module=self, fixed_images=self.fixed_images, anchors_images=self.anchors_images)
@@ -133,12 +140,15 @@ class LightningAutoencoder(AbstractLightningModule):
         on_fit_end_viz(lightning_module=self, validation_stats_df=None)
 
     def training_step(self, batch: Any, batch_idx: int) -> Mapping[str, Any]:
-        return self.step(batch, batch_idx, stage=Stage.TRAIN_STAGE)
+        return self.step(batch, batch_idx, stage=Stage.TRAIN_STAGE, return_all=False)
 
     def validation_step(self, batch: Any, batch_idx: int) -> Mapping[str, Any]:
-        return self.step(batch, batch_idx, stage=Stage.VAL_STAGE)
+        out = self.step(batch, batch_idx, stage=Stage.VAL_STAGE, return_all=True)
+        self.validation_step_outputs.append(out)
+        return out
 
-    def validation_epoch_end(self, outputs: List[Dict[str, Any]]) -> None:
+    def on_validation_epoch_end(self) -> None:
+        outputs = self.validation_step_outputs
         if self.trainer.sanity_checking:
             return
 
@@ -146,10 +156,10 @@ class LightningAutoencoder(AbstractLightningModule):
         for output in outputs:
             aggregate(
                 validation_aggregation,
-                image_index=output["batch"]["id"].cpu().tolist(),
+                image_index=output["batch"]["id"].tolist(),
                 class_name=[self.metadata.idx_to_class[x] for x in output["batch"]["y"]],
-                target=output["batch"]["y"].cpu(),
-                latents=output[Output.DEFAULT_LATENT].cpu(),
+                target=output["batch"]["y"],
+                latents=output[Output.DEFAULT_LATENT],
                 epoch=[self.current_epoch] * len(output["batch"]["id"]),
                 is_anchor=[False] * len(output["batch"]["id"]),
                 anchor_index=[None] * len(output["batch"]["id"]),
@@ -194,9 +204,14 @@ class LightningAutoencoder(AbstractLightningModule):
             anchor_index=list(range(anchors_num)),
         )
 
-        latents = validation_aggregation["latents"]
-        self.fit_pca(latents)
-        add_2D_latents(validation_aggregation, latents=latents, pca=self.validation_pca)
+        if (
+            SupportedViz.LATENT_SPACE in self.supported_viz
+            or SupportedViz.LATENT_SPACE_NORMALIZED in self.supported_viz
+            or SupportedViz.LATENT_SPACE_PCA in self.supported_viz
+        ):
+            latents = validation_aggregation["latents"]
+            self.fit_pca(latents)
+            add_2D_latents(validation_aggregation, latents=latents, pca=self.validation_pca)
         del validation_aggregation["latents"]
 
         validation_epoch_end_viz(
@@ -207,6 +222,7 @@ class LightningAutoencoder(AbstractLightningModule):
             anchors_latents=anchors_latents,
             fixed_images_out=self(self.fixed_images),
         )
+        self.validation_step_outputs.clear()  # free memory
 
 
 @hydra.main(config_path=str(PROJECT_ROOT / "conf"), config_name="default", version_base="1.1")
