@@ -24,12 +24,12 @@ val_images_fixed_idxs: [7371, 3963, 2861, 1701, 3172,
                         3007, 4992, 1428, 9901, 5388]
 
 num_workers:
-  train: 8
-  val: 4
+  train: 4
+  val: 2
   test: 0
 
 batch_size:
-  train: 1028
+  train: 512
   val: 128
   test: 16
 
