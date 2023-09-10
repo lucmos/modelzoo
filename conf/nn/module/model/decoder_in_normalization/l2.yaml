@@ -1,4 +1,0 @@
-_target_: modelzoo.modules.aes.latent_normalization.L2Norm
-p: 2
-dim: -1
-eps: 1e-12
