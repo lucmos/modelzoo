@@ -1,5 +1,6 @@
 from typing import Any, Dict, List
 
+import hydra
 import torch
 from anypy.nn.blocks import build_dynamic_encoder_decoder
 from torch import Tensor, nn
@@ -13,6 +14,8 @@ class VanillaAE(nn.Module):
         self,
         metadata,
         input_size,
+        encoder_out_config: List[Dict[str, Any]],
+        decoder_in_config: List[Dict[str, Any]],
         encoder_layers_config: List[Dict[str, Any]],
         decoder_layers_config: List[Dict[str, Any]],
         **kwargs,
@@ -36,6 +39,9 @@ class VanillaAE(nn.Module):
             input_shape=[-1, metadata.n_channels, metadata.height, metadata.width],
         )
 
+        self.encoder_out = hydra.utils.instantiate(encoder_out_config, _recursive_=True, _convert_="partial")
+        self.decoder_in = hydra.utils.instantiate(decoder_in_config, _recursive_=True, _convert_="partial")
+
     def encode(self, input: Tensor) -> Dict[str, Tensor]:
         """
         Encodes the input by passing through the encoder network
@@ -44,7 +50,7 @@ class VanillaAE(nn.Module):
         :return: (Tensor) List of latent codes
         """
         result = self.encoder(input)
-        result = torch.flatten(result, start_dim=1)
+        result = self.encoder_out(result)
         return {
             Output.BATCH_LATENT: result,
         }
@@ -56,7 +62,7 @@ class VanillaAE(nn.Module):
         :param z: (Tensor) [B x D]
         :return: (Tensor) [B x C x H x W]
         """
-        result = batch_latent.view(-1, *self.encoder_out_shape[1:])
+        result = self.decoder_in(batch_latent)
         result = self.decoder(result)
         return {
             Output.RECONSTRUCTION: result,

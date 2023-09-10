@@ -1,11 +1,11 @@
-import math
-from typing import Dict, List
+from typing import Any, Dict, List
 
+import hydra
 import torch
+from anypy.nn.blocks import build_dynamic_encoder_decoder
 from torch import Tensor, nn
 from torch.nn import functional as F
 
-from modelzoo.modules.aes.blocks import build_dynamic_encoder_decoder
 from modelzoo.modules.aes.enumerations import Output
 
 
@@ -14,9 +14,10 @@ class VanillaVAE(nn.Module):
         self,
         metadata,
         input_size,
-        latent_dim: int,
-        decoder_in_normalization: nn.Module,
-        hidden_dims: List,
+        encoder_out_config: List[Dict[str, Any]],
+        decoder_in_config: List[Dict[str, Any]],
+        encoder_layers_config: List[Dict[str, Any]],
+        decoder_layers_config: List[Dict[str, Any]],
         kld_weight: float,
         **kwargs,
     ) -> None:
@@ -32,28 +33,17 @@ class VanillaVAE(nn.Module):
 
         self.metadata = metadata
         self.input_size = input_size
-        self.latent_dim = latent_dim
         self.kld_weight = kld_weight
 
         self.encoder, self.encoder_out_shape, self.decoder = build_dynamic_encoder_decoder(
-            width=metadata.width,
-            height=metadata.height,
-            n_channels=metadata.n_channels,
-            hidden_dims=hidden_dims,
+            encoder_layers_config=encoder_layers_config,
+            decoder_layers_config=decoder_layers_config,
+            input_shape=[-1, metadata.n_channels, metadata.height, metadata.width],
         )
-        encoder_out_numel = math.prod(self.encoder_out_shape[1:])
 
-        self.fc_mu = nn.Linear(encoder_out_numel, latent_dim)
-        self.fc_var = nn.Linear(encoder_out_numel, latent_dim)
-
-        self.decoder_in = nn.Sequential(
-            nn.Linear(
-                self.latent_dim,
-                encoder_out_numel,
-            ),
-            nn.GELU(),
-        )
-        self.decoder_in_normalization = decoder_in_normalization
+        self.fc_mu = hydra.utils.instantiate(encoder_out_config, _recursive_=True, _convert_="partial")
+        self.fc_var = hydra.utils.instantiate(encoder_out_config, _recursive_=True, _convert_="partial")
+        self.decoder_in = hydra.utils.instantiate(decoder_in_config, _recursive_=True, _convert_="partial")
 
     def encode(self, input: Tensor) -> Dict[str, Tensor]:
         """
@@ -63,13 +53,11 @@ class VanillaVAE(nn.Module):
         :return: (Tensor) List of latent codes
         """
         result = self.encoder(input)
-        result = torch.flatten(result, start_dim=1)
 
         # Split the result into mu and var components
         # of the latent Gaussian distribution
         mu = self.fc_mu(result)
         log_var = self.fc_var(result)
-
         z = self.reparameterize(mu, log_var)
         return {
             Output.BATCH_LATENT: z,
@@ -84,9 +72,7 @@ class VanillaVAE(nn.Module):
         :param z: (Tensor) [B x D]
         :return: (Tensor) [B x C x H x W]
         """
-        result = self.decoder_in_normalization(batch_latent)
-        result = self.decoder_in(result)
-        result = result.view(-1, *self.encoder_out_shape[1:])
+        result = self.decoder_in(batch_latent)
         result = self.decoder(result)
         return {
             Output.RECONSTRUCTION: result,
@@ -125,10 +111,10 @@ class VanillaVAE(nn.Module):
         """
         predictions = model_out[Output.RECONSTRUCTION]
         targets = batch["x"]
-        mean = model_out[Output.LATENT_MU]
-        log_variance = model_out[Output.LATENT_LOGVAR]
+        mean = model_out[Output.LATENT_MU].flatten(1)
+        log_variance = model_out[Output.LATENT_LOGVAR].flatten(1)
 
-        kld_weight = self.kld_weight  # Account for the minibatch samples from the dataset
+        kld_weight = self.kld_weight
         recons_loss = F.mse_loss(predictions, targets)
 
         kld_loss = torch.mean(-0.5 * torch.sum(1 + log_variance - mean**2 - log_variance.exp(), dim=1), dim=0)

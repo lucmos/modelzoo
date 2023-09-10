@@ -30,10 +30,23 @@ encoder_layers_config:
     num_features: 16
 
 encoder_out_config:
-  _target_: torch.nn.Identity
+  _target_: torch.nn.Sequential
+  _args_:
+    - _target_: torch.nn.Flatten
+      start_dim: 1
+    - _target_: torch.nn.Linear
+      in_features: 784
+      out_features: 784
 
 decoder_in_config:
-  _target_: torch.nn.Identity
+  _target_: torch.nn.Sequential
+  _args_:
+    - _target_: torch.nn.Linear
+      in_features: 784
+      out_features: 784
+    - _target_: torch.nn.Unflatten
+      dim: 1
+      unflattened_size: [16, 7, 7]
 
 decoder_layers_config:
   - _target_: anypy.nn.dyncnn.infer_transposed_convolution2d

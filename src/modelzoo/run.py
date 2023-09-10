@@ -117,10 +117,11 @@ def run(cfg: DictConfig) -> str:
 
     # Store model locally
     if trainer.checkpoint_callback.best_model_path is not None:
-        pylogger.info("Storing the best model into modelzoo storage")
         wandb_id = f"{trainer.logger.version}"
 
         ckpt_relpath = MODELZOO_ROOT / "checkpoints" / f"{wandb_id}.ckpt.zip"
+        pylogger.info(f"Storing the best model into modelzoo storage: {ckpt_relpath}")
+
         filepath = PROJECT_ROOT / MODELZOO_ROOT / "index.csv"
         ckptpath = PROJECT_ROOT / ckpt_relpath
         ckptpath.parent.mkdir(exist_ok=True, parents=True)
@@ -130,6 +131,7 @@ def run(cfg: DictConfig) -> str:
 
         modelrow = {
             "timestamp": pd.Timestamp.utcnow(),
+            "seed_index": cfg.train.seed_index,
             "entity": f"{trainer.logger.experiment.entity}",
             "project_name": f"{trainer.logger.experiment.project_name()}",
             "wandb_id": wandb_id,
@@ -143,7 +145,7 @@ def run(cfg: DictConfig) -> str:
             "path": str(ckpt_relpath),
             "version": cfg.core.version,
             "commit": sha,
-            "tags": cfg.core.tags,
+            "tags": ",".join(cfg.core.tags),
         }
         df = pd.DataFrame(modelrow, index=[0])
 

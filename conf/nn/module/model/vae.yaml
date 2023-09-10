@@ -1,8 +1,75 @@
 _target_: modelzoo.modules.aes.vae.VanillaVAE
-latent_dim: 768
-hidden_dims: [12, 24, 48]
 kld_weight: 0.00025
-decoder_in_normalization: ???
+encoder_layers_config:
+  - _target_: anypy.nn.dyncnn.infer_convolution2d
+    input_shape: ???
+    output_shape: [-1, 32, 28, 28]
+    kernel_size: null
+    stride: 1
+    padding: 0
+    dilation: 1
+  - _target_: torch.nn.ReLU
+  - _target_: torch.nn.BatchNorm2d
+    num_features: 32
+  - _target_: anypy.nn.dyncnn.infer_convolution2d
+    input_shape: ???
+    output_shape: [-1, 32, 14, 14]
+    kernel_size: 4
+    stride: 2
+    padding: null
+    dilation: 1
+  - _target_: torch.nn.ReLU
+  - _target_: anypy.nn.dyncnn.infer_convolution2d
+    input_shape: ???
+    output_shape: [-1, 16, 7, 7]
+    kernel_size: null
+    stride: 2
+    padding: 1
+    dilation: 1
+  - _target_: torch.nn.ReLU
+  - _target_: torch.nn.BatchNorm2d
+    num_features: 16
 
-defaults:
-  - decoder_in_normalization: none
+encoder_out_config:
+  _target_: torch.nn.Sequential
+  _args_:
+    - _target_: anypy.nn.dyncnn.infer_convolution2d
+      input_shape: [-1, 16, 7, 7]
+      output_shape: [-1, 16, 7, 7]
+      kernel_size: null
+      stride: 1
+      padding: 1
+      dilation: 1
+
+decoder_in_config:
+  _target_: torch.nn.Identity
+
+decoder_layers_config:
+  - _target_: anypy.nn.dyncnn.infer_transposed_convolution2d
+    input_shape: ???
+    output_shape: [-1, 32, 14, 14]
+    kernel_size: null
+    stride: 2
+    padding: 1
+    dilation: 1
+  - _target_: torch.nn.ReLU
+  - _target_: torch.nn.BatchNorm2d
+    num_features: 32
+  - _target_: anypy.nn.dyncnn.infer_transposed_convolution2d
+    input_shape: ???
+    output_shape: [-1, 32, 28, 28]
+    kernel_size: null
+    stride: 2
+    padding: 1
+    dilation: 1
+  - _target_: torch.nn.ReLU
+  - _target_: torch.nn.BatchNorm2d
+    num_features: 32
+  - _target_: anypy.nn.dyncnn.infer_transposed_convolution2d
+    input_shape: ???
+    output_shape: ???
+    kernel_size: null
+    stride: 1
+    padding: 1
+    dilation: 1
+  - _target_: torch.nn.Sigmoid
