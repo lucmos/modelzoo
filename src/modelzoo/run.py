@@ -1,8 +1,12 @@
 import logging
+import shutil
+from pathlib import Path
 from typing import List, Optional
 
+import git
 import hydra
 import omegaconf
+import pandas as pd
 import pytorch_lightning as pl
 import torch
 from omegaconf import DictConfig, ListConfig
@@ -21,6 +25,8 @@ from modelzoo.data.vision.datamodule import MetaData
 torch.set_float32_matmul_precision("high")
 
 pylogger = logging.getLogger(__name__)
+
+MODELZOO_ROOT: Path = Path("models")
 
 
 def build_callbacks(cfg: ListConfig, *args: Callback) -> List[Callback]:
@@ -109,6 +115,43 @@ def run(cfg: DictConfig) -> str:
             pylogger.info("Starting testing!")
             trainer.test(datamodule=datamodule)
 
+    # Store model locally
+    if trainer.checkpoint_callback.best_model_path is not None:
+        pylogger.info("Storing the best model into modelzoo storage")
+        wandb_id = f"{trainer.logger.version}"
+
+        ckpt_relpath = MODELZOO_ROOT / "checkpoints" / f"{wandb_id}.ckpt.zip"
+        filepath = PROJECT_ROOT / MODELZOO_ROOT / "index.csv"
+        ckptpath = PROJECT_ROOT / ckpt_relpath
+        ckptpath.parent.mkdir(exist_ok=True, parents=True)
+
+        repo = git.Repo(search_parent_directories=True)
+        sha = repo.head.object.hexsha
+
+        modelrow = {
+            "timestamp": pd.Timestamp.utcnow(),
+            "entity": f"{trainer.logger.experiment.entity}",
+            "project_name": f"{trainer.logger.experiment.project_name()}",
+            "wandb_id": wandb_id,
+            "name": cfg.core.name,
+            "dataset": cfg.nn.data.datasets.hf.name,  # TODO: generalize modelzoo to any datasets not only hf
+            "score": trainer.checkpoint_callback.best_model_score.detach().cpu().item(),
+            "module": cfg.nn.module._target_,
+            "model": cfg.nn.module.model._target_,
+            "parameters": sum(p.numel() for p in model.parameters()),
+            "trainable_parameters": sum(p.numel() for p in model.parameters() if p.requires_grad),
+            "path": str(ckpt_relpath),
+            "version": cfg.core.version,
+            "commit": sha,
+            "tags": cfg.core.tags,
+        }
+        df = pd.DataFrame(modelrow, index=[0])
+
+        df.to_csv(filepath, mode="a", index=False, sep="\t", header=not filepath.exists())
+
+        # TODO: grab from NNIOCheckpoint the correct ckpt name
+        shutil.copyfile(f"{trainer.checkpoint_callback.best_model_path}.zip", ckptpath)
+
     # Logger closing to release resources/avoid multi-run conflicts
     if logger is not None:
         logger.experiment.finish()
@@ -116,7 +159,7 @@ def run(cfg: DictConfig) -> str:
     return logger.run_dir
 
 
-@hydra.main(config_path=str(PROJECT_ROOT / "conf"), config_name="default")
+@hydra.main(config_path=str(PROJECT_ROOT / "conf"), config_name="default", version_base="1.1")
 def main(cfg: omegaconf.DictConfig):
     run(cfg)
 
