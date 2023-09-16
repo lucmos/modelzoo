@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import hydra
 import torch
@@ -18,6 +18,7 @@ class VanillaAE(nn.Module):
         decoder_in_config: List[Dict[str, Any]],
         encoder_layers_config: List[Dict[str, Any]],
         decoder_layers_config: List[Dict[str, Any]],
+        relative_projection_config: Optional[Dict[str, Any]] = None,
         **kwargs,
     ) -> None:
         """https://github.com/AntixK/PyTorch-VAE/blob/master/models/vanilla_vae.py
@@ -31,6 +32,8 @@ class VanillaAE(nn.Module):
         super().__init__()
 
         self.metadata = metadata
+        self.register_buffer("anchors_images", metadata.anchors_images)
+
         self.input_size = input_size
 
         self.encoder, self.encoder_out_shape, self.decoder = build_dynamic_encoder_decoder(
@@ -42,6 +45,15 @@ class VanillaAE(nn.Module):
         self.encoder_out = hydra.utils.instantiate(encoder_out_config, _recursive_=True, _convert_="partial")
         self.decoder_in = hydra.utils.instantiate(decoder_in_config, _recursive_=True, _convert_="partial")
 
+        self.relative_projection = (
+            hydra.utils.instantiate(
+                relative_projection_config,
+                _convert_="partial",
+            )
+            if relative_projection_config is not None
+            else None
+        )
+
     def encode(self, input: Tensor) -> Dict[str, Tensor]:
         """
         Encodes the input by passing through the encoder network
@@ -51,6 +63,13 @@ class VanillaAE(nn.Module):
         """
         result = self.encoder(input)
         result = self.encoder_out(result)
+
+        if self.relative_projection is not None:
+            with torch.no_grad():
+                anchors_latents = self.encoder(self.anchors_images)
+                anchor_latents = self.encoder_out(anchors_latents)
+            result = self.relative_projection(x=result, anchors=anchor_latents)
+
         return {
             Output.BATCH_LATENT: result,
         }
