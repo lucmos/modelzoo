@@ -1,7 +1,7 @@
 #!/bin/bash
 
 
-for model in ae vae linearized_ae linearized_vae
+for model in rel_linearized_ae rel_linearized_vae
 do
        for dataset in mnist fmnist cifar10 cifar100
        do
