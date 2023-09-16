@@ -24,10 +24,15 @@ def load_wandb_ckpt(
     return load_local_ckpt(ckpt_path)
 
 
-def load_local_ckpt(ckpt_path: Path) -> Tuple[pl.LightningModule, Dict[str, Any]]:
+def load_local_ckpt(ckpt_path: Path, strict: bool) -> Tuple[pl.LightningModule, Dict[str, Any]]:
     ckpt = NNCheckpointIO.load(ckpt_path)
     clspath = ckpt["cfg"]["nn"]["module"]["_target_"]
     modulename, classname = clspath.rsplit(".", 1)
 
     clazz = getattr(importlib.import_module(modulename), classname)
-    return load_model(module_class=clazz, checkpoint_path=ckpt_path, map_location="cpu")
+    return load_model(
+        module_class=clazz,
+        checkpoint_path=ckpt_path,
+        strict=strict,
+        map_location="cpu",
+    )
