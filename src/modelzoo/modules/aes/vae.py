@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import hydra
 import torch
@@ -19,6 +19,7 @@ class VanillaVAE(nn.Module):
         encoder_layers_config: List[Dict[str, Any]],
         decoder_layers_config: List[Dict[str, Any]],
         kld_weight: float,
+        relative_projection_config: Optional[Dict[str, Any]] = None,
         **kwargs,
     ) -> None:
         """https://github.com/AntixK/PyTorch-VAE/blob/master/models/vanilla_vae.py
@@ -32,6 +33,8 @@ class VanillaVAE(nn.Module):
         super().__init__()
 
         self.metadata = metadata
+        self.register_buffer("anchors_images", metadata.anchors_images)
+
         self.input_size = input_size
         self.kld_weight = kld_weight
 
@@ -44,6 +47,15 @@ class VanillaVAE(nn.Module):
         self.fc_mu = hydra.utils.instantiate(encoder_out_config, _recursive_=True, _convert_="partial")
         self.fc_var = hydra.utils.instantiate(encoder_out_config, _recursive_=True, _convert_="partial")
         self.decoder_in = hydra.utils.instantiate(decoder_in_config, _recursive_=True, _convert_="partial")
+
+        self.relative_projection = (
+            hydra.utils.instantiate(
+                relative_projection_config,
+                _convert_="partial",
+            )
+            if relative_projection_config is not None
+            else None
+        )
 
     def encode(self, input: Tensor) -> Dict[str, Tensor]:
         """
@@ -59,6 +71,13 @@ class VanillaVAE(nn.Module):
         mu = self.fc_mu(result)
         log_var = self.fc_var(result)
         z = self.reparameterize(mu, log_var)
+
+        if self.relative_projection is not None:
+            with torch.no_grad():
+                anchors_latents = self.encoder(self.anchors_images)
+                anchor_latents = self.fc_mu(anchors_latents)  # no std on anchors
+            result = self.relative_projection(x=z, anchors=anchor_latents)
+
         return {
             Output.BATCH_LATENT: z,
             Output.LATENT_MU: mu,

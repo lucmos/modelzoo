@@ -1,10 +1,12 @@
-_target_: modelzoo.modules.aes.ae.VanillaAE
+_target_: modelzoo.modules.aes.vae.VanillaVAE
+kld_weight: 0.00025
 
 relative_projection_config:
   _target_: modelzoo.modules.relative.RelativeModule
   projection: cosine
   abs_transforms: null
   rel_transforms: null
+
 
 encoder_layers_config:
   - _target_: anypy.nn.dyncnn.infer_convolution2d
@@ -48,8 +50,6 @@ encoder_out_config:
 decoder_in_config:
   _target_: torch.nn.Sequential
   _args_:
-    - _target_: torch.nn.LayerNorm
-      normalized_shape: 784
     - _target_: torch.nn.Linear
       in_features: 784
       out_features: 784
