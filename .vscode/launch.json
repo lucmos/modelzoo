@@ -4,7 +4,22 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
-        {
+    {
+        "name": "run.py",
+        "type": "python",
+        "request": "launch",
+        "program": "src/modelzoo/run.py",
+        "console": "integratedTerminal",
+        "justMyCode": false,
+        "args": [
+            "nn=aes",
+            "train=reconstruction",
+            "nn/module/model=rel_linearized_ae",
+            "nn/data/datasets/vision/hf@nn.data.datasets.anchors=fmnist",
+            "nn/data/datasets/vision/hf@nn.data.datasets.hf=fmnist"
+        ]
+    },
+    {
             "name": "Python: Current File",
             "type": "python",
             "request": "launch",
@@ -17,6 +32,21 @@
                 "nn/module/model=ae",
                 "nn/data/datasets/vision/hf@nn.data.datasets.anchors=fmnist",
                 "nn/data/datasets/vision/hf@nn.data.datasets.hf=fmnist"
+            ]
+        },
+        {
+            "name": "Python: Profile File",
+            "type": "python",
+            "request": "launch",
+            "module": "cProfile",
+            "justMyCode": false,
+            "args": [
+                "-o", "/tmp/tmp.prof", "${file}",
+                "nn=aes",
+                "train=reconstruction",
+                "nn/module/model=ae",
+                "nn/data/datasets/vision/hf@nn.data.datasets.anchors=cifar100",
+                "nn/data/datasets/vision/hf@nn.data.datasets.hf=cifar100"
             ]
         }
     ]
