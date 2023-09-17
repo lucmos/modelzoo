@@ -1,6 +1,5 @@
 import logging
 import shutil
-from pathlib import Path
 from typing import List, Optional
 
 import git
@@ -18,15 +17,12 @@ from nn_core.common.utils import enforce_tags, seed_index_everything
 from nn_core.model_logging import NNLogger
 from nn_core.serialization import NNCheckpointIO
 
-# Force the execution of __init__.py if this file is executed directly.
-import modelzoo  # noqa
+from modelzoo import MODELZOO_ROOT
 from modelzoo.data.vision.datamodule import MetaData
 
 torch.set_float32_matmul_precision("high")
 
 pylogger = logging.getLogger(__name__)
-
-MODELZOO_ROOT: Path = Path("models")
 
 
 def build_callbacks(cfg: ListConfig, *args: Callback) -> List[Callback]:
