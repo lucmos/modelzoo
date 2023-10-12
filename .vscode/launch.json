@@ -16,7 +16,12 @@
             "train=reconstruction",
             "nn/module/model=rel_linearized_ae",
             "nn/data/datasets/vision/hf@nn.data.datasets.anchors=fmnist",
-            "nn/data/datasets/vision/hf@nn.data.datasets.hf=fmnist"
+            "nn/data/datasets/vision/hf@nn.data.datasets.hf=fmnist",
+            "nn.data.num_workers.train=0",
+            "nn.data.num_workers.val=0",
+            "nn.data.num_workers.test=0",
+            "train.trainer.max_epochs=1",
+            // "+train.trainer.limit_train_batches=0.1",
         ]
     },
     {
