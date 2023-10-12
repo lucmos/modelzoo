@@ -21,6 +21,7 @@
             "nn.data.num_workers.val=0",
             "nn.data.num_workers.test=0",
             "train.trainer.max_epochs=1",
+            "train.trainer.check_val_every_n_epoch=1",
             // "+train.trainer.limit_train_batches=0.1",
         ]
     },

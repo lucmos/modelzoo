@@ -13,8 +13,10 @@ OmegaConf.register_new_resolver(
 
 
 PACKAGE_ROOT = Path(__file__).resolve().parent.parent.parent
-MODELZOO_ROOT: Path = PACKAGE_ROOT / "models"
-MODELS_INDEX: Path =  MODELZOO_ROOT / "index.csv"
+
+MODELZOO_FOLDER: Path = Path("models")
+
+MODELS_INDEX: Path = PACKAGE_ROOT / MODELZOO_FOLDER / "index.csv"
 
 # Required workaround because PyTorch Lightning configures the logging on import,
 # thus the logging configuration defined in the __init__.py must be called before
