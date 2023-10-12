@@ -14,6 +14,7 @@ def load_wandb_ckpt(
     entity: str,
     project: str,
     run_id: str,
+    strict: bool,
 ) -> Tuple[pl.LightningModule, Dict[str, Any]]:
     # Ensure the wandb directory exists
     (PROJECT_ROOT / "wandb").mkdir(exist_ok=True)
@@ -21,7 +22,7 @@ def load_wandb_ckpt(
     # Download or detect the checkpoint
     ckpt_path = checkpoint_selection(entity, project, run_id)
 
-    return load_local_ckpt(ckpt_path)
+    return load_local_ckpt(ckpt_path, strict=strict)
 
 
 def load_local_ckpt(ckpt_path: Path, strict: bool) -> Tuple[pl.LightningModule, Dict[str, Any]]:

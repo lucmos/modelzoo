@@ -17,7 +17,7 @@ from nn_core.common.utils import enforce_tags, seed_index_everything
 from nn_core.model_logging import NNLogger
 from nn_core.serialization import NNCheckpointIO
 
-from modelzoo import MODELZOO_ROOT
+from modelzoo import MODELS_INDEX, MODELZOO_FOLDER, PACKAGE_ROOT
 from modelzoo.data.vision.datamodule import MetaData
 
 torch.set_float32_matmul_precision("high")
@@ -107,19 +107,22 @@ def run(cfg: DictConfig) -> str:
     if fast_dev_run:
         pylogger.info("Skipping testing in 'fast_dev_run' mode!")
     else:
-        if "test" in cfg.nn.data.datasets and trainer.checkpoint_callback.best_model_path is not None:
+        if (
+            "test" in cfg.nn.data.datasets
+            and trainer.checkpoint_callback.best_model_path is not None
+            and trainer.checkpoint_callback.best_model_path
+        ):
             pylogger.info("Starting testing!")
             trainer.test(datamodule=datamodule)
 
     # Store model locally
-    if trainer.checkpoint_callback.best_model_path is not None:
+    if trainer.checkpoint_callback.best_model_path is not None and trainer.checkpoint_callback.best_model_path:
         wandb_id = f"{trainer.logger.version}"
 
-        ckpt_relpath = MODELZOO_ROOT / "checkpoints" / f"{wandb_id}.ckpt.zip"
+        ckpt_relpath = MODELZOO_FOLDER / "checkpoints" / f"{wandb_id}.ckpt.zip"
         pylogger.info(f"Storing the best model into modelzoo storage: {ckpt_relpath}")
 
-        filepath = PROJECT_ROOT / MODELZOO_ROOT / "index.csv"
-        ckptpath = PROJECT_ROOT / ckpt_relpath
+        ckptpath = PACKAGE_ROOT / ckpt_relpath
         ckptpath.parent.mkdir(exist_ok=True, parents=True)
 
         repo = git.Repo(search_parent_directories=True)
@@ -145,7 +148,7 @@ def run(cfg: DictConfig) -> str:
         }
         df = pd.DataFrame(modelrow, index=[0])
 
-        df.to_csv(filepath, mode="a", index=False, sep="\t", header=not filepath.exists())
+        df.to_csv(MODELS_INDEX, mode="a", index=False, sep="\t", header=not MODELS_INDEX.exists())
 
         # TODO: grab from NNIOCheckpoint the correct ckpt name
         shutil.copyfile(f"{trainer.checkpoint_callback.best_model_path}.zip", ckptpath)

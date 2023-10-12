@@ -1,19 +1,22 @@
 import logging
 from pathlib import Path
 
-from dvc.repo import Repo
 from omegaconf import OmegaConf
 
 from nn_core.console_logging import NNRichHandler
 
-OmegaConf.register_new_resolver("ifthenelse", lambda positive, condition, negative: positive if condition else negative)
+OmegaConf.register_new_resolver(
+    "ifthenelse",
+    lambda positive, condition, negative: positive if condition else negative,
+    replace=True,
+)
 
 
 PACKAGE_ROOT = Path(__file__).resolve().parent.parent.parent
 
+MODELZOO_FOLDER: Path = Path("models")
 
-MODELZOO_ROOT: Path = PACKAGE_ROOT / "models"
-
+MODELS_INDEX: Path = PACKAGE_ROOT / MODELZOO_FOLDER / "index.csv"
 
 # Required workaround because PyTorch Lightning configures the logging on import,
 # thus the logging configuration defined in the __init__.py must be called before
@@ -42,12 +45,6 @@ logging.basicConfig(
 )
 
 pylogger = logging.getLogger(__name__)
-
-if not MODELZOO_ROOT.exists():
-    pylogger.info("Cloning modelzoo repository...")
-    repo = Repo(PACKAGE_ROOT)
-    repo.pull()
-
 
 try:
     from ._version import __version__ as __version__

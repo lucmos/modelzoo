@@ -323,6 +323,7 @@ class MyDataModule(pl.LightningDataModule):
             batch[self.datasets.hf.standard_x_key] = transform(batch[self.datasets.hf.standard_x_key])
             return batch
 
+        # TODO: possibly use the dataset.set_transform to apply the transform, instead of using the collate_fn
         self.transform_batch = transform_batch
 
         # Here you should instantiate your datasets, you may also split the train into train and validation if needed.
