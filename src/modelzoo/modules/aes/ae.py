@@ -1,3 +1,4 @@
+import logging
 from typing import Any, Dict, List, Optional
 
 import hydra
@@ -7,6 +8,9 @@ from torch import Tensor, nn
 from torch.nn import functional as F
 
 from modelzoo.modules.aes.enumerations import Output
+from modelzoo.relative.projection import RelativeModule
+
+pylogger = logging.getLogger(__name__)
 
 
 class VanillaAE(nn.Module):
@@ -45,7 +49,7 @@ class VanillaAE(nn.Module):
         self.encoder_out = hydra.utils.instantiate(encoder_out_config, _recursive_=True, _convert_="partial")
         self.decoder_in = hydra.utils.instantiate(decoder_in_config, _recursive_=True, _convert_="partial")
 
-        self.relative_projection = (
+        self.relative_block = (
             hydra.utils.instantiate(
                 relative_projection_config,
                 _convert_="partial",
@@ -53,6 +57,9 @@ class VanillaAE(nn.Module):
             if relative_projection_config is not None
             else None
         )
+        if self.relative_block is not None and isinstance(self.relative_block, RelativeModule):
+            raise ValueError("RelativeModule is not supported for VanillaAE! Use RelativeBlock instead.")
+        pylogger.info(f"Relative block: {self.relative_block}")
 
     def encode(self, input: Tensor) -> Dict[str, Tensor]:
         """
@@ -64,11 +71,11 @@ class VanillaAE(nn.Module):
         result = self.encoder(input)
         result = self.encoder_out(result)
 
-        if self.relative_projection is not None:
+        if self.relative_block is not None:
             with torch.no_grad():
                 anchors_latents = self.encoder(self.anchors_images)
                 anchor_latents = self.encoder_out(anchors_latents)
-            result = self.relative_projection(x=result, anchors=anchor_latents)
+            result = self.relative_block(x=result, anchors=anchor_latents)
 
         return {
             Output.BATCH_LATENT: result,
@@ -81,6 +88,8 @@ class VanillaAE(nn.Module):
         :param z: (Tensor) [B x D]
         :return: (Tensor) [B x C x H x W]
         """
+        if self.relative_block is not None:
+            batch_latent = self.relative_block.decode(batch_latent)
         result = self.decoder_in(batch_latent)
         result = self.decoder(result)
         return {

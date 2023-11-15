@@ -10,7 +10,7 @@ OmegaConf.register_new_resolver(
     lambda positive, condition, negative: positive if condition else negative,
     replace=True,
 )
-
+OmegaConf.register_new_resolver("len", lambda x: len(x))
 
 PACKAGE_ROOT = Path(__file__).resolve().parent.parent.parent
 
