@@ -3,7 +3,7 @@
 
 for model in relbridge_all_ae relbridge_cosine_ae relbridge_euclidean_ae relbridge_l1_ae relbridge_linf_ae relbridge_none_ae
 do
-       for dataset in cifar100
+       for dataset in cifar100 fmnist
        do
               for seed in 0 1 2
               do
