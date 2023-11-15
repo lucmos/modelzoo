@@ -7,7 +7,7 @@ relative_projection_config:
   aggregation_module:
     _target_: modelzoo.relative.aggregation.NonLinearSumAggregation
     subspace_dim: ${nn.data.anchors_num}
-    num_subspaces: ${len:..projection_names}
+    num_subspaces: 1
 
 encoder_layers_config:
   - _target_: anypy.nn.dyncnn.infer_convolution2d
