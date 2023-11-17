@@ -1,4 +1,5 @@
 import functools
+import logging
 from typing import Callable, Optional, Sequence, Tuple, Type
 
 import torch
@@ -6,6 +7,8 @@ from deprecated import deprecated
 from latentis.relative.projection import Projections, RelativeProjector
 from latentis.transforms import Transforms
 from torch import nn
+
+pylogger = logging.getLogger(__name__)
 
 PROJECTION_NAME2PROJECTION = {
     "cosine": Projections.COSINE,
@@ -110,6 +113,7 @@ class RelativeBlock(torch.nn.Module):
         self.aggregation_module = aggregation_module
 
     def forward(self, x: torch.Tensor, anchors: torch.Tensor) -> torch.Tensor:
+        pylogger.warning("RelativeBlock used in forward pass! If you want to use it in training, use encode and decode!")
         rel_x = self.encode(x, anchors)
         return self.decode(rel_x)
 

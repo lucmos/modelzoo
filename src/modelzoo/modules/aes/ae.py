@@ -75,7 +75,7 @@ class VanillaAE(nn.Module):
             with torch.no_grad():
                 anchors_latents = self.encoder(self.anchors_images)
                 anchor_latents = self.encoder_out(anchors_latents)
-            result = self.relative_block(x=result, anchors=anchor_latents)
+            result = self.relative_block.encode(x=result, anchors=anchor_latents)
 
         return {
             Output.BATCH_LATENT: result,
